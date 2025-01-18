@@ -1,8 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System.IO;
+using UnityEngine.SceneManagement;
 
 public class VR_TMP_Control : MonoBehaviour
 {
@@ -19,6 +19,7 @@ public class VR_TMP_Control : MonoBehaviour
     public GameObject panel_test;
     public GameObject gameCompletePanel;
     public PrecisionManager scoreManager; // Reference to the script that holds the score
+    public GameObject gameOverCanvas; // Reference to the Game Over Canvas
 
     private bool timerStarted = false;
     private float timeLimit = 180.1f;
@@ -26,13 +27,16 @@ public class VR_TMP_Control : MonoBehaviour
     private bool csvSaved = false;
     private List<string> csvRows = new List<string>(); // List to store CSV rows
 
+
     private void Start()
     {
         count_time = 0;
         gameCompletePanel.SetActive(false);
+        if (gameOverCanvas != null)
+            gameOverCanvas.SetActive(false);
 
         // Add CSV header row
-        csvRows.Add("Time,Height,Speed,Score");
+        csvRows.Add("Time,Height,Speed,Precision");
     }
 
     void Update()
@@ -62,20 +66,13 @@ public class VR_TMP_Control : MonoBehaviour
                 speed.text = drone.speed.ToString("f2") + "m/s";
 
                 // Display the mode (ATTI or GPS)
-                if (Setting.Attitude)
-                {
-                    GPS.text = "(ATTI Mode)";
-                }
-                else
-                {
-                    GPS.text = "(GPS Mode)";
-                }
+                GPS.text = Setting.Attitude ? "(ATTI Mode)" : "(GPS Mode)";
 
                 // Gather data
                 float heightValue = drone.position.y;
                 float speedValue = drone.speed;
                 float precisionValue = scoreManager.GetPrecision(); // Precision is a float
-                csvRows.Add($"{count_time:F2},{heightValue:F1},{speedValue:F2},{precisionValue:F1}"); // Keep precision as a float with 1 decimal place
+                csvRows.Add($"{count_time:F2},{heightValue:F1},{speedValue:F2},{precisionValue:F1}");
 
                 // Check if the time limit is reached
                 if (count_time >= timeLimit)
@@ -99,26 +96,58 @@ public class VR_TMP_Control : MonoBehaviour
         }
     }
 
+    public void GameOverFromOutOfBounds()
+    {
+        // Triggered when the drone leaves the allowed area
+        if (!gamePaused)
+        {
+            Debug.Log("Game over triggered by out-of-bounds countdown.");
+            PauseGame();
+        }
+    }
+
     private void PauseGame()
     {
-        // Pause the game and show the "Game Complete" panel
+        // Pause the game and show the "Game Complete" or "Game Over" panel
         Time.timeScale = 0;
         timerStarted = false;
         gamePaused = true;
-        gameCompletePanel.SetActive(true);
+
+        if (gameCompletePanel != null && !gameCompletePanel.activeSelf)
+        {
+            gameCompletePanel.SetActive(true);
+        }
+        if (gameOverCanvas != null && !gameOverCanvas.activeSelf)
+        {
+            gameOverCanvas.SetActive(true);
+        }
     }
 
     private void WriteToCSV()
     {
-        // Define the file path to save the CSV file in the Assets folder
-        string filePath = Path.Combine(Application.dataPath, "GameData.csv");
+        // Get the current scene's name (either "Easy" or "Medium")
+        string sceneName = SceneManager.GetActiveScene().name;
 
-        // Log the file path to the console for debugging purposes
-        Debug.Log("CSV file saved at: " + filePath);
+        // Define the directory where the files will be saved
+        string directoryPath = Application.dataPath;
 
-        // Write all rows to the CSV file in the Assets folder
+        // Find the next available file number
+        int fileNumber = 1;
+        string filePath;
+        do
+        {
+            // Use the scene name to create the file name (e.g., "Easy_1.csv" or "Medium_1.csv")
+            filePath = Path.Combine(directoryPath, $"{sceneName}_{fileNumber}.csv");
+            fileNumber++;
+        } while (File.Exists(filePath)); // Increment the number if the file already exists
+
+        // Log the file path to the console for debugging
+        Debug.Log($"CSV file saved at: {filePath}");
+
+        // Write all rows to the new CSV file
         File.WriteAllLines(filePath, csvRows);
-        csvSaved = true; // Ensure the file is only saved once
-    }
 
+        // Mark the file as saved to prevent duplicate saves
+        csvSaved = true;
+    }
 }

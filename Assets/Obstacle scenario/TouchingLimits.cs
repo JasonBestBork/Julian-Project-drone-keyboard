@@ -94,8 +94,14 @@ public class TouchingLimits : MonoBehaviour
             canvasToShow.SetActive(false);
         if (gameOverCanvas != null)
             gameOverCanvas.SetActive(true);
-    }
 
+        // Call the GameOverFromOutOfBounds method in VR_TMP_Control
+        VR_TMP_Control vrTMPControl = FindObjectOfType<VR_TMP_Control>();
+        if (vrTMPControl != null)
+        {
+            vrTMPControl.GameOverFromOutOfBounds();
+        }
+    }
 
 
 }

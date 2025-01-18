@@ -1,42 +1,74 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ControlledSpawner : MonoBehaviour
 {
-    // Left-to-right spawns
-    public Transform[] leftSpawnPoints; // Attach left spawn points here
-    // Right-to-left spawns
-    public Transform[] rightSpawnPoints; // Attach right spawn points here
+    // Left-to-right spawns (Easy)
+    public Transform[] leftSpawnPoints;
+    // Right-to-left spawns (Easy)
+    public Transform[] rightSpawnPoints;
+    // Diagonal spawns (Medium)
+    public Transform[] diagonalSpawnPoints;
+
     public GameObject objectPrefab; // Prefab of the object to spawn
 
-    // Two separate target areas: one for left-to-right and one for right-to-left
-    public Transform leftTargetArea; // Target area for left-to-right objects
-    public Transform rightTargetArea; // Target area for right-to-left objects
+    // Target areas
+    public Transform leftTargetArea;
+    public Transform rightTargetArea;
+    public Transform diagonalTargetArea;
 
-    public float spawnInterval = 2f; // Interval between spawns
-    public float minSpeed = 1f; // Minimum movement speed
-    public float maxSpeed = 5f; // Maximum movement speed
-    public float minSize = 0.5f; // Minimum object size
-    public float maxSize = 2f; // Maximum object size
+    public float spawnInterval = 2f;
+    public float minSpeed = 1f;
+    public float maxSpeed = 5f;
+    public float minSize = 0.5f;
+    public float maxSize = 2f;
 
     private void Start()
     {
-        // Start spawning objects from both sides
+        // Start spawning objects based on the current scene
         StartCoroutine(SpawnObjects());
     }
 
     private System.Collections.IEnumerator SpawnObjects()
     {
-        while (true)
-        {
-            // Spawn object from left side
-            SpawnFromSide(leftSpawnPoints, leftTargetArea, "left");
-            // Wait for the object to be destroyed before spawning the next one
-            yield return new WaitForSeconds(spawnInterval);
+        // Check the current scene name and set the spawning behavior accordingly
+        string currentSceneName = SceneManager.GetActiveScene().name;
 
-            // Spawn object from right side
-            SpawnFromSide(rightSpawnPoints, rightTargetArea, "right");
-            // Wait for the object to be destroyed before spawning the next one
-            yield return new WaitForSeconds(spawnInterval);
+        if (currentSceneName.Contains("Easy"))
+        {
+            // Easy Level: spawn objects left-to-right and right-to-left
+            while (true)
+            {
+                SpawnFromSide(leftSpawnPoints, leftTargetArea, "left");
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnFromSide(rightSpawnPoints, rightTargetArea, "right");
+                yield return new WaitForSeconds(spawnInterval);
+            }
+        }
+        else if (currentSceneName.Contains("Medium"))
+        {
+            // Medium Level: spawn objects diagonally
+            while (true)
+            {
+                SpawnFromSide(diagonalSpawnPoints, diagonalTargetArea, "diagonal");
+                yield return new WaitForSeconds(spawnInterval);
+            }
+        }
+        else if (currentSceneName.Contains("Hard"))
+        {
+            // Hard Level: spawn objects with more complex behavior (e.g., random movement or additional features)
+            while (true)
+            {
+                SpawnFromSide(leftSpawnPoints, leftTargetArea, "left");
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnFromSide(rightSpawnPoints, rightTargetArea, "right");
+                yield return new WaitForSeconds(spawnInterval);
+
+                // Add additional complex spawning behavior for Hard level if needed
+                // You can make it spawn random directions, faster speed, etc.
+            }
         }
     }
 
@@ -46,8 +78,8 @@ public class ControlledSpawner : MonoBehaviour
         int spawnIndex = Random.Range(0, spawnPoints.Length);
         Transform selectedSpawnPoint = spawnPoints[spawnIndex];
 
-        // Instantiate the object at the selected spawn point with appropriate rotation
-        GameObject obj = Instantiate(objectPrefab, selectedSpawnPoint.position, Quaternion.Euler(0, 0, direction == "left" ? 90 : -90));
+        // Instantiate the object at the selected spawn point
+        GameObject obj = Instantiate(objectPrefab, selectedSpawnPoint.position, Quaternion.identity);
 
         // Randomize size
         float randomSize = Random.Range(minSize, maxSize);
@@ -56,22 +88,28 @@ public class ControlledSpawner : MonoBehaviour
         // Randomize speed
         float randomSpeed = Random.Range(minSpeed, maxSpeed);
 
-        // Move the object towards the target area
-        StartCoroutine(MoveObjectToTarget(obj, selectedSpawnPoint.position, targetArea.position, randomSpeed, direction));
+        // If the direction is "diagonal", handle diagonal movement
+        if (direction == "diagonal")
+        {
+            // Move the object diagonally
+            StartCoroutine(MoveObjectDiagonally(obj, selectedSpawnPoint.position, targetArea.position, randomSpeed));
+        }
+        else
+        {
+            // Otherwise, use horizontal movement (left or right)
+            StartCoroutine(MoveObjectToTarget(obj, selectedSpawnPoint.position, targetArea.position, randomSpeed, direction));
+        }
     }
 
     private System.Collections.IEnumerator MoveObjectToTarget(GameObject obj, Vector3 start, Vector3 end, float speed, string direction)
     {
-        // Correct start and end positions for horizontal movement, using Y and Z as constants
         Vector3 startPosition = new Vector3(start.x, obj.transform.position.y, obj.transform.position.z);
         Vector3 endPosition = new Vector3(end.x, obj.transform.position.y, obj.transform.position.z);
 
-        // Calculate the distance between start and end positions
         float distance = Vector3.Distance(startPosition, endPosition);
         float travelTime = distance / speed;
         float elapsedTime = 0f;
 
-        // Move the object smoothly from start to end position
         while (elapsedTime < travelTime)
         {
             obj.transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime / travelTime);
@@ -79,7 +117,27 @@ public class ControlledSpawner : MonoBehaviour
             yield return null;
         }
 
-        // Destroy the object after reaching the target
+        Destroy(obj);
+    }
+
+    // Method for diagonal movement
+    private System.Collections.IEnumerator MoveObjectDiagonally(GameObject obj, Vector3 start, Vector3 end, float speed)
+    {
+        Vector3 startPosition = start;
+        Vector3 endPosition = end;
+
+        float distance = Vector3.Distance(startPosition, endPosition);
+        float travelTime = distance / speed;
+        float elapsedTime = 0f;
+
+        // Move object diagonally (along X and Y axes)
+        while (elapsedTime < travelTime)
+        {
+            obj.transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime / travelTime);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
         Destroy(obj);
     }
 }

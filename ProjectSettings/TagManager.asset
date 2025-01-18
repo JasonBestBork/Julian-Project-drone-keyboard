@@ -8,6 +8,11 @@ TagManager:
   - Target
   - Limits
   - bullet
+  - CheckTag
+  - DroveCore
+  - Drove
+  - H
+  - bulletm
   layers:
   - Default
   - TransparentFX

@@ -720,8 +720,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   finalCanvas: {fileID: 120201109}
   monitoredObject: {fileID: 1991930865}
-  objectToInstantiate: {fileID: 316580988518273554, guid: 53d15dfe5f661994d8f18b92051b59b3, type: 3}
-  spawnLocation: {fileID: 1356270128488259131, guid: 53d15dfe5f661994d8f18b92051b59b3, type: 3}
+  objectToInstantiate: {fileID: 6769066673718911525, guid: d0ffc7aed8779f24193a1bd8a34ed033, type: 3}
+  spawnLocation: {fileID: 3240938531039783259, guid: d0ffc7aed8779f24193a1bd8a34ed033, type: 3}
 --- !u!1 &301624000
 GameObject:
   m_ObjectHideFlags: 0
@@ -2973,6 +2973,10 @@ PrefabInstance:
       propertyPath: scoreManager
       value: 
       objectReference: {fileID: 256880127}
+    - target: {fileID: 7432252163945148017, guid: 9deee0a1600e22146bcb4d60e1927dcf, type: 3}
+      propertyPath: gameOverCanvas
+      value: 
+      objectReference: {fileID: 7326960345586719057, guid: b9250d366eceeca429e7f00db23ab37e, type: 3}
     - target: {fileID: 7432252163945148017, guid: 9deee0a1600e22146bcb4d60e1927dcf, type: 3}
       propertyPath: gameCompletePanel
       value: 
