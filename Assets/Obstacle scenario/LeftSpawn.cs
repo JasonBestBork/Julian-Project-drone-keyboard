@@ -7,16 +7,14 @@ public class ControlledSpawner : MonoBehaviour
     public Transform[] rightSpawnPoints;
     public Transform[] diagonalSpawnPoints;
 
-    public GameObject objectPrefab; 
+    public Transform[] leftObjectives;  
+    public Transform[] rightObjectives; 
+    public Transform[] diagonalObjectives; 
 
-    
-    public Transform leftTargetArea;
-    public Transform rightTargetArea;
-    public Transform diagonalTargetArea;
+    public GameObject objectPrefab;
 
     public float spawnInterval = 2f;
 
-   
     public float easyMinSpeed = 1f;
     public float easyMaxSpeed = 3f;
     public float easyMinSize = 0.5f;
@@ -39,10 +37,7 @@ public class ControlledSpawner : MonoBehaviour
 
     private void Start()
     {
-        // Set difficulty-specific values based on the current scene
         SetDifficultySettings();
-
-        // Start spawning objects based on the current scene
         StartCoroutine(SpawnObjects());
     }
 
@@ -75,128 +70,88 @@ public class ControlledSpawner : MonoBehaviour
 
     private System.Collections.IEnumerator SpawnObjects()
     {
-        // Check the current scene name and set the spawning behavior accordingly
         string currentSceneName = SceneManager.GetActiveScene().name;
 
-        if (currentSceneName.Contains("Easy"))
+        while (true)
         {
-          
-            while (true)
+            if (currentSceneName.Contains("Easy"))
             {
-                SpawnFromSide(leftSpawnPoints, leftTargetArea, Random.Range(minSpeed, maxSpeed));
-                yield return new WaitForSeconds(spawnInterval);
-                SpawnFromSide(rightSpawnPoints, rightTargetArea, Random.Range(minSpeed, maxSpeed));
-                yield return new WaitForSeconds(spawnInterval);
-
-            }
-        }
-        else if (currentSceneName.Contains("Medium"))
-        {
-           
-            while (true)
-            {
-                SpawnFromSide(leftSpawnPoints, leftTargetArea, Random.Range(minSpeed, maxSpeed));
+                // Spawn objects for Easy Level
+                SpawnWithObjective(leftSpawnPoints, leftObjectives, Random.Range(minSpeed, maxSpeed));
                 yield return new WaitForSeconds(spawnInterval);
 
-                SpawnFromSide(rightSpawnPoints, rightTargetArea, Random.Range(minSpeed, maxSpeed));
-                yield return new WaitForSeconds(spawnInterval);
-
-                SpawnFromSide(diagonalSpawnPoints, diagonalTargetArea, Random.Range(minSpeed, maxSpeed));
+                SpawnWithObjective(rightSpawnPoints, rightObjectives, Random.Range(minSpeed, maxSpeed));
                 yield return new WaitForSeconds(spawnInterval);
             }
-        }
-        else if (currentSceneName.Contains("Hard"))
-        {
-           
-            while (true)
+            else if (currentSceneName.Contains("Medium"))
             {
-          
+                // Spawn objects for Medium Level
+                SpawnWithObjective(leftSpawnPoints, leftObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnWithObjective(rightSpawnPoints, rightObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnWithObjective(diagonalSpawnPoints, diagonalObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
+            }
+            else if (currentSceneName.Contains("Hard"))
+            {
+                // Spawn objects for Hard Level
+                SpawnWithObjective(leftSpawnPoints, leftObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnWithObjective(rightSpawnPoints, rightObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
+
+                SpawnWithObjective(diagonalSpawnPoints, diagonalObjectives, Random.Range(minSpeed, maxSpeed));
+                yield return new WaitForSeconds(spawnInterval);
             }
         }
     }
 
-    private void SpawnFromSide(Transform[] spawnPoints, Transform limitPoint, float speed)
+    private void SpawnWithObjective(Transform[] spawnPoints, Transform[] objectives, float speed)
     {
-        // Pick a random spawn point
+        // Validate the arrays are matched
+        if (spawnPoints.Length != objectives.Length)
+        {
+            Debug.LogError("Spawn points and objectives must have the same length!");
+            return;
+        }
+
+        // Pick a random spawn point and its corresponding objective
         int spawnIndex = Random.Range(0, spawnPoints.Length);
         Transform selectedSpawnPoint = spawnPoints[spawnIndex];
+        Transform targetObjective = objectives[spawnIndex];
 
-        // Instantiate the object (cylinder)
+        // Instantiate the object
         GameObject obj = Instantiate(objectPrefab, selectedSpawnPoint.position, Quaternion.identity);
 
         // Randomize size
         float randomSize = Random.Range(minSize, maxSize);
-        obj.transform.localScale = new Vector3(randomSize, randomSize, randomSize);  // Keep the scale proportional
+        obj.transform.localScale = new Vector3(randomSize, randomSize, randomSize);
 
-        // Calculate the direction to the limit point
-        Vector3 directionToLimit = (limitPoint.position - selectedSpawnPoint.position).normalized;
+        // Rotate the object to face the objective
+        Vector3 directionToTarget = (targetObjective.position - selectedSpawnPoint.position).normalized;
+        obj.transform.rotation = Quaternion.LookRotation(directionToTarget);
 
-        // Adjust the rotation so the X-axis faces the limit point
-        obj.transform.rotation = Quaternion.LookRotation(directionToLimit);
-
-        // Start moving the object toward the limit point
-        StartCoroutine(MoveObjectToPoint(obj, limitPoint.position, speed));
+        // Move the object toward the objective
+        StartCoroutine(MoveObjectToPoint(obj, targetObjective.position, speed));
     }
-
-
-
 
     private System.Collections.IEnumerator MoveObjectToPoint(GameObject obj, Vector3 targetPoint, float speed)
     {
         while (obj != null)
         {
-            // Move the object toward the target point
             obj.transform.position = Vector3.MoveTowards(obj.transform.position, targetPoint, speed * Time.deltaTime);
 
-            // Check if the object has reached the target point
             if (Vector3.Distance(obj.transform.position, targetPoint) < 0.1f)
             {
-                Destroy(obj); // Destroy the object
+                Destroy(obj);
                 yield break;
             }
 
             yield return null;
         }
-    }
-
-
-    private System.Collections.IEnumerator MoveObjectToTarget(GameObject obj, Vector3 start, Vector3 end, float speed, string direction)
-    {
-        Vector3 startPosition = new Vector3(start.x, obj.transform.position.y, obj.transform.position.z);
-        Vector3 endPosition = new Vector3(end.x, obj.transform.position.y, obj.transform.position.z);
-
-        float distance = Vector3.Distance(startPosition, endPosition);
-        float travelTime = distance / speed;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < travelTime)
-        {
-            obj.transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime / travelTime);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        Destroy(obj);
-    }
-
-    // Method for diagonal movement
-    private System.Collections.IEnumerator MoveObjectDiagonally(GameObject obj, Vector3 start, Vector3 end, float speed)
-    {
-        Vector3 startPosition = start;
-        Vector3 endPosition = end;
-
-        float distance = Vector3.Distance(startPosition, endPosition);
-        float travelTime = distance / speed;
-        float elapsedTime = 0f;
-
-        // Move object diagonally (along X and Y axes)
-        while (elapsedTime < travelTime)
-        {
-            obj.transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime / travelTime);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        Destroy(obj);
     }
 }

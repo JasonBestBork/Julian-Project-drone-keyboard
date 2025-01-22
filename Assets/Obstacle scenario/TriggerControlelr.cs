@@ -3,11 +3,13 @@ using UnityEngine;
 public class TriggerController : MonoBehaviour
 {
     [SerializeField] private GameObject finalCanvas;
-    [SerializeField] private GameObject monitoredObject; 
-    [SerializeField] private GameObject objectToInstantiate; 
-    [SerializeField] private Transform spawnLocation; 
+    [SerializeField] private GameObject monitoredObject;
+    [SerializeField] private GameObject objectToInstantiate;
+    [SerializeField] private Transform spawnLocation;
 
-    private bool hasInstantiated = false; 
+    [SerializeField] private GameObject enemyToEnable; // Existing enemy object to enable
+
+    private bool hasInstantiated = false;
 
     void Start()
     {
@@ -25,6 +27,11 @@ public class TriggerController : MonoBehaviour
         {
             Debug.LogWarning("No object assigned to instantiate!");
         }
+
+        if (enemyToEnable == null)
+        {
+            Debug.LogWarning("No enemy object assigned to enable!");
+        }
     }
 
     void Update()
@@ -34,13 +41,21 @@ public class TriggerController : MonoBehaviour
             Debug.Log("Monitored object is destroyed. Activating final canvas.");
             EnableFinalCanvas();
 
+            // Instantiate the main object
             if (objectToInstantiate != null && spawnLocation != null)
             {
                 Instantiate(objectToInstantiate, spawnLocation.position, spawnLocation.rotation);
-                Debug.Log("Instantiated the object with 4 3D objects.");
-
-                hasInstantiated = true;
+                Debug.Log("Instantiated the main object with 4 3D objects.");
             }
+
+            // Enable the enemy object
+            if (enemyToEnable != null)
+            {
+                enemyToEnable.SetActive(true);
+                Debug.Log("Enabled the enemy object.");
+            }
+
+            hasInstantiated = true;
         }
     }
 
